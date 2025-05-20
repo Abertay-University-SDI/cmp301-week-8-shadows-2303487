@@ -1,4 +1,4 @@
-// texture shader.cpp
+// Shadow shader.cpp
 #include "shadowshader.h"
 
 

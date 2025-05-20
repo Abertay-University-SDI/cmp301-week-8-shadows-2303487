@@ -1,4 +1,4 @@
-// Lab1.cpp
+// App1.cpp
 // Lab 1 example, simple coloured triangle mesh
 #include "App1.h"
 

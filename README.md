@@ -1,8 +1,8 @@
 # CMP301_Shadows
 Starter project for CMP301. Shadow mapping.
 
-Name:
+Name:Keiran Clark
 
-Number:
+Number:2303487
 
-Outline of project:
+Outline of project: Shadow Maps

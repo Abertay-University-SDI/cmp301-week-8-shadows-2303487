@@ -1,4 +1,4 @@
-// Colour shader.h
+// Depth shader.h
 // Simple shader example.
 #pragma once
 
