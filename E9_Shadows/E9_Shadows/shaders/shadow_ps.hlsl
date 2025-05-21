@@ -1,15 +1,22 @@
 
 Texture2D shaderTexture : register(t0);
 Texture2D depthMapTexture : register(t1);
+Texture2D depthMapTexture2 : register(t2);
 
 SamplerState diffuseSampler  : register(s0);
 SamplerState shadowSampler : register(s1);
 
 cbuffer LightBuffer : register(b0)
 {
-	float4 ambient;
-	float4 diffuse;
-	float3 direction;
+    float4 ambient1;
+    float4 diffuse1;
+    float3 direction1;
+    float padding1; 
+
+    float4 ambient2;
+    float4 diffuse2;
+    float3 direction2;
+    float padding2;
 };
 
 struct InputType
@@ -17,16 +24,17 @@ struct InputType
     float4 position : SV_POSITION;
     float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
-    float4 lightViewPos : TEXCOORD1;
+    float4 lightViewPos1 : TEXCOORD1;
+    float4 lightViewPos2 : TEXCOORD2;
 };
 
 // Calculate lighting intensity based on direction and normal. Combine with light colour.
-float4 calculateLighting(float3 lightDirection, float3 normal, float4 diffuse)
+float4 calculateLighting(float3 lightDir, float3 normal, float4 diffuse)
 {
-    float intensity = saturate(dot(normal, lightDirection));
-    float4 colour = saturate(diffuse * intensity);
-    return colour;
+    float intensity = saturate(dot(normalize(normal), normalize(-lightDir)));
+    return saturate(diffuse * intensity);
 }
+
 
 // Is the gemoetry in our shadow map
 bool hasDepthData(float2 uv)
@@ -58,31 +66,41 @@ float2 getProjectiveCoords(float4 lightViewPosition)
 {
     // Calculate the projected texture coordinates.
     float2 projTex = lightViewPosition.xy / lightViewPosition.w;
-    projTex *= float2(0.5, -0.5);
+    projTex *= float2(0.5f, -0.5f);
     projTex += float2(0.5f, 0.5f);
     return projTex;
 }
 
 float4 main(InputType input) : SV_TARGET
 {
-    float shadowMapBias = 0.005f;
-    float4 colour = float4(0.f, 0.f, 0.f, 1.f);
+    float shadowBias = 0.005f;
     float4 textureColour = shaderTexture.Sample(diffuseSampler, input.tex);
 
-	// Calculate the projected texture coordinates.
-    float2 pTexCoord = getProjectiveCoords(input.lightViewPos);
-	
-    // Shadow test. Is or isn't in shadow
-    if (hasDepthData(pTexCoord))
+    float2 texCoord1 = getProjectiveCoords(input.lightViewPos1);
+    float2 texCoord2 = getProjectiveCoords(input.lightViewPos2);
+
+    float4 totalLighting = float4(0, 0, 0, 1);
+
+    // Light 1
+    if (hasDepthData(texCoord1))
     {
-        // Has depth map data
-        if (!isInShadow(depthMapTexture, pTexCoord, input.lightViewPos, shadowMapBias))
+        if (!isInShadow(depthMapTexture, texCoord1, input.lightViewPos1, shadowBias))
         {
-            // is NOT in shadow, therefore light
-            colour = calculateLighting(-direction, input.normal, diffuse);
+            totalLighting += calculateLighting(direction1, input.normal, diffuse1);
         }
     }
-    
-    colour = saturate(colour + ambient);
-    return saturate(colour) * textureColour;
+
+    // Light 2
+    if (hasDepthData(texCoord2))
+    {
+        if (!isInShadow(depthMapTexture2, texCoord2, input.lightViewPos2, shadowBias))
+        {
+            totalLighting += calculateLighting(direction2, input.normal, diffuse2);
+        }
+    }
+
+    // Combine with ambient
+    totalLighting += (ambient1 + ambient2);
+
+    return saturate(totalLighting) * textureColour;
 }

@@ -33,6 +33,8 @@ public:
 	void generateViewMatrix();			///< Generates and upto date view matrix, based on current rotation
 	void generateProjectionMatrix(float screenNear, float screenFar);			///< Generate project matrix based on current rotation and provided near & far plane
 	void generateOrthoMatrix(float screenWidth, float screenHeight, float near, float far);		///< Generates orthographic matrix based on supplied screen dimensions and near & far plane.
+	void generatePerspectiveMatrix(float fovDegrees, float aspect, float nearZ, float farZ);
+
 
 	// Setters
 	void setAmbientColour(float red, float green, float blue, float alpha);		///< Set ambient colour RGBA

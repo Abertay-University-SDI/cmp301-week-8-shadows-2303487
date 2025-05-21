@@ -124,3 +124,8 @@ XMMATRIX Light::getOrthoMatrix()
 {
 	return orthoMatrix;
 }
+
+void Light::generatePerspectiveMatrix(float fovDegrees, float aspect, float nearZ, float farZ)
+{
+	projectionMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(fovDegrees), aspect, nearZ, farZ);
+}
