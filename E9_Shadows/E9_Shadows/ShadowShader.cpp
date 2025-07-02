@@ -1,40 +1,19 @@
 // texture shader.cpp
 #include "shadowshader.h"
 
-
 ShadowShader::ShadowShader(ID3D11Device* device, HWND hwnd) : BaseShader(device, hwnd)
 {
 	initShader(L"shadow_vs.cso", L"shadow_ps.cso");
 }
 
-
 ShadowShader::~ShadowShader()
 {
-	if (sampleState)
-	{
-		sampleState->Release();
-		sampleState = 0;
-	}
-	if (matrixBuffer)
-	{
-		matrixBuffer->Release();
-		matrixBuffer = 0;
-	}
-	if (layout)
-	{
-		layout->Release();
-		layout = 0;
-	}
-	if (lightBuffer)
-	{	
-		lightBuffer->Release();
-		lightBuffer = 0;
-	}
-
-	//Release base shader components
+	if (sampleState) { sampleState->Release(); sampleState = 0; }
+	if (matrixBuffer) { matrixBuffer->Release(); matrixBuffer = 0; }
+	if (layout) { layout->Release(); layout = 0; }
+	if (lightBuffer) { lightBuffer->Release(); lightBuffer = 0; }
 	BaseShader::~BaseShader();
 }
-
 
 void ShadowShader::initShader(const wchar_t* vsFilename, const wchar_t* psFilename)
 {
@@ -42,11 +21,9 @@ void ShadowShader::initShader(const wchar_t* vsFilename, const wchar_t* psFilena
 	D3D11_SAMPLER_DESC samplerDesc;
 	D3D11_BUFFER_DESC lightBufferDesc;
 
-	// Load (+ compile) shader files
 	loadVertexShader(vsFilename);
 	loadPixelShader(psFilename);
 
-	// Setup the description of the dynamic matrix constant buffer that is in the vertex shader.
 	matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	matrixBufferDesc.ByteWidth = sizeof(MatrixBufferType);
 	matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -55,7 +32,6 @@ void ShadowShader::initShader(const wchar_t* vsFilename, const wchar_t* psFilena
 	matrixBufferDesc.StructureByteStride = 0;
 	renderer->CreateBuffer(&matrixBufferDesc, NULL, &matrixBuffer);
 
-	// Create a texture sampler state description.
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -63,15 +39,11 @@ void ShadowShader::initShader(const wchar_t* vsFilename, const wchar_t* psFilena
 	samplerDesc.MipLODBias = 0.0f;
 	samplerDesc.MaxAnisotropy = 1;
 	samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-	samplerDesc.BorderColor[0] = 0;
-	samplerDesc.BorderColor[1] = 0;
-	samplerDesc.BorderColor[2] = 0;
-	samplerDesc.BorderColor[3] = 0;
+	memset(samplerDesc.BorderColor, 0, sizeof(float) * 4);
 	samplerDesc.MinLOD = 0;
 	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 	renderer->CreateSamplerState(&samplerDesc, &sampleState);
 
-	// Sampler for shadow map sampling.
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
 	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
@@ -82,7 +54,6 @@ void ShadowShader::initShader(const wchar_t* vsFilename, const wchar_t* psFilena
 	samplerDesc.BorderColor[3] = 1.0f;
 	renderer->CreateSamplerState(&samplerDesc, &sampleStateShadow);
 
-	// Setup light buffer
 	lightBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	lightBufferDesc.ByteWidth = sizeof(LightBufferType);
 	lightBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -90,49 +61,66 @@ void ShadowShader::initShader(const wchar_t* vsFilename, const wchar_t* psFilena
 	lightBufferDesc.MiscFlags = 0;
 	lightBufferDesc.StructureByteStride = 0;
 	renderer->CreateBuffer(&lightBufferDesc, NULL, &lightBuffer);
-
 }
 
-
-void ShadowShader::setShaderParameters(ID3D11DeviceContext* deviceContext, const XMMATRIX &worldMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projectionMatrix, ID3D11ShaderResourceView* texture, ID3D11ShaderResourceView*depthMap, Light* light)
+void ShadowShader::setShaderParameters(
+	ID3D11DeviceContext* deviceContext,
+	const XMMATRIX& worldMatrix, const XMMATRIX& viewMatrix, const XMMATRIX& projectionMatrix,
+	ID3D11ShaderResourceView* texture,
+	ID3D11ShaderResourceView* dirDepthMap,
+	ID3D11ShaderResourceView* spotDepthMap,
+	Light* dirLight,
+	Light* spotLight,
+	float spotCutoffDegrees,
+	float spotExponent)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	MatrixBufferType* dataPtr;
 	LightBufferType* lightPtr;
-	
-	// Transpose the matrices to prepare them for the shader.
+
+	// Transpose all matrices for shader
 	XMMATRIX tworld = XMMatrixTranspose(worldMatrix);
 	XMMATRIX tview = XMMatrixTranspose(viewMatrix);
 	XMMATRIX tproj = XMMatrixTranspose(projectionMatrix);
-	XMMATRIX tLightViewMatrix = XMMatrixTranspose(light->getViewMatrix());
-	XMMATRIX tLightProjectionMatrix = XMMatrixTranspose(light->getOrthoMatrix());
-	
-	// Lock the constant buffer so it can be written to.
+	XMMATRIX tDirLightView = XMMatrixTranspose(dirLight->getViewMatrix());
+	XMMATRIX tDirLightProj = XMMatrixTranspose(dirLight->getOrthoMatrix());
+	XMMATRIX tSpotLightView = XMMatrixTranspose(spotLight->getViewMatrix());
+	XMMATRIX tSpotLightProj = XMMatrixTranspose(spotLight->getProjectionMatrix()); // Perspective!
+
+	// --- Matrix buffer (b0) ---
 	deviceContext->Map(matrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
 	dataPtr = (MatrixBufferType*)mappedResource.pData;
-	dataPtr->world = tworld;// worldMatrix;
+	dataPtr->world = tworld;
 	dataPtr->view = tview;
 	dataPtr->projection = tproj;
-	dataPtr->lightView = tLightViewMatrix;
-	dataPtr->lightProjection = tLightProjectionMatrix;
+	dataPtr->dirLightView = tDirLightView;
+	dataPtr->dirLightProj = tDirLightProj;
+	dataPtr->spotLightView = tSpotLightView;
+	dataPtr->spotLightProj = tSpotLightProj;
 	deviceContext->Unmap(matrixBuffer, 0);
 	deviceContext->VSSetConstantBuffers(0, 1, &matrixBuffer);
 
-	//Additional
-	// Send light data to pixel shader
+	// --- Light buffer (b1) ---
 	deviceContext->Map(lightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
 	lightPtr = (LightBufferType*)mappedResource.pData;
-	lightPtr->ambient = light->getAmbientColour();
-	lightPtr->diffuse = light->getDiffuseColour();
-	lightPtr->direction = light->getDirection();
-	lightPtr->padding = 0.f;
+	// Directional
+	lightPtr->dirAmbient = dirLight->getAmbientColour();
+	lightPtr->dirDiffuse = dirLight->getDiffuseColour();
+	lightPtr->dirDirection = dirLight->getDirection();
+	// Spot
+	lightPtr->spotAmbient = spotLight->getAmbientColour();
+	lightPtr->spotDiffuse = spotLight->getDiffuseColour();
+	lightPtr->spotDirection = spotLight->getDirection();
+	lightPtr->spotCutoff = spotCutoffDegrees; // Pass in degrees or cos(degrees) as needed
+	lightPtr->spotPosition = spotLight->getPosition();
+	lightPtr->spotExponent = spotExponent;
 	deviceContext->Unmap(lightBuffer, 0);
-	deviceContext->PSSetConstantBuffers(0, 1, &lightBuffer);
+	deviceContext->PSSetConstantBuffers(1, 1, &lightBuffer);
 
-	// Set shader texture resource in the pixel shader.
+	// --- Resource bindings ---
 	deviceContext->PSSetShaderResources(0, 1, &texture);
-	deviceContext->PSSetShaderResources(1, 1, &depthMap);
+	deviceContext->PSSetShaderResources(1, 1, &dirDepthMap);
+	deviceContext->PSSetShaderResources(2, 1, &spotDepthMap);
 	deviceContext->PSSetSamplers(0, 1, &sampleState);
 	deviceContext->PSSetSamplers(1, 1, &sampleStateShadow);
 }
-

@@ -22,13 +22,11 @@ OutputType main(InputType input)
 {
     OutputType output;
 
-    // Calculate the position of the vertex against the world, view, and projection matrices.
-    output.position = mul(input.position, worldMatrix);
-    output.position = mul(output.position, viewMatrix);
-    output.position = mul(output.position, projectionMatrix);
-
-    // Store the position value in a second input value for depth value calculations.
+    // Transform the vertex to world, view, and projection space
+    float4 worldPos = mul(input.position, worldMatrix);
+    float4 viewPos = mul(worldPos, viewMatrix);
+    output.position = mul(viewPos, projectionMatrix);
     output.depthPosition = output.position;
-	
+
     return output;
 }

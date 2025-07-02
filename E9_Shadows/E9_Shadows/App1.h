@@ -1,9 +1,7 @@
 // Application.h
-#ifndef _APP1_H
-#define _APP1_H
+#pragma once
 
-// Includes
-#include "DXF.h"	// include dxframework
+#include "DXF.h"
 #include "TextureShader.h"
 #include "ShadowShader.h"
 #include "DepthShader.h"
@@ -11,29 +9,48 @@
 class App1 : public BaseApplication
 {
 public:
-
 	App1();
 	~App1();
+
 	void init(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeight, Input* in, bool VSYNC, bool FULL_SCREEN);
 
-	bool frame();
+	bool frame() override;
 
 protected:
-	bool render();
+	bool render() override;
 	void depthPass();
+	void spotDepthPass();
 	void finalPass();
 	void gui();
 
 private:
-	TextureShader* textureShader;
-	PlaneMesh* mesh;
+	// Meshes and models
+	PlaneMesh* mesh = nullptr;
+	CubeMesh* cubeMesh = nullptr;
+	SphereMesh* sphereMesh = nullptr;
+	AModel* model = nullptr;
 
-	Light* light;
-	AModel* model;
-	ShadowShader* shadowShader;
-	DepthShader* depthShader;
+	// Shaders
+	TextureShader* textureShader = nullptr;
+	ShadowShader* shadowShader = nullptr;
+	DepthShader* depthShader = nullptr;
 
-	ShadowMap* shadowMap;
+	// Lights
+	Light* light = nullptr;
+	Light* spotLight = nullptr;
+
+	// Shadow maps
+	ShadowMap* shadowMap = nullptr;
+	ShadowMap* spotShadowMap = nullptr;
+
+	// Spot light parameters
+	float spotCutoffDegrees = 60.0f;
+	float spotExponent = 8.0f;
+	XMMATRIX spotLightProjMatrix;
+
+	// Animation state
+	float teapotAngle = 0.0f;
+
+	// Wireframe toggle
+	bool wireframeToggle = false;
 };
-
-#endif
