@@ -1,10 +1,19 @@
-// Application.h
+/**
+ * App1.h
+ * ------
+ * Declares the App1 class, the main application entry point for rendering a scene with dual shadow lights.
+ * Sets up all geometry, shaders, lights, and shadow maps. Handles initialization, frame update, and rendering passes
+ * (depth, shadow, and final scene render), as well as basic GUI for real-time interaction and debugging.
+ * Inherits from BaseApplication for core application lifecycle management.
+ */
+
 #pragma once
 
 #include "DXF.h"
 #include "TextureShader.h"
 #include "ShadowShader.h"
 #include "DepthShader.h"
+//#include "PlaneMesh.h"
 
 class App1 : public BaseApplication
 {
@@ -12,19 +21,30 @@ public:
 	App1();
 	~App1();
 
+	// Initialize application resources, scene, shaders, lights, and shadow maps
 	void init(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeight, Input* in, bool VSYNC, bool FULL_SCREEN);
 
+	// Main per-frame update
 	bool frame() override;
 
 protected:
+	// Main render routine, executes all rendering passes
 	bool render() override;
+
+	// Render scene from directional light's perspective for shadow mapping
 	void depthPass();
+
+	// Render scene from spotlight's perspective for shadow mapping
 	void spotDepthPass();
+
+	// Render the final scene with full lighting and shadows
 	void finalPass();
+
+	// Draw the ImGui interface and debug overlays
 	void gui();
 
 private:
-	// Meshes and models
+	// Scene meshes and models
 	PlaneMesh* mesh = nullptr;
 	CubeMesh* cubeMesh = nullptr;
 	SphereMesh* sphereMesh = nullptr;
@@ -39,11 +59,11 @@ private:
 	Light* light = nullptr;
 	Light* spotLight = nullptr;
 
-	// Shadow maps
+	// Shadow map render targets
 	ShadowMap* shadowMap = nullptr;
 	ShadowMap* spotShadowMap = nullptr;
 
-	// Spot light parameters
+	// Spotlight parameters
 	float spotCutoffDegrees = 60.0f;
 	float spotExponent = 8.0f;
 	XMMATRIX spotLightProjMatrix;
@@ -51,6 +71,11 @@ private:
 	// Animation state
 	float teapotAngle = 0.0f;
 
-	// Wireframe toggle
+	// Wireframe rendering toggle
 	bool wireframeToggle = false;
+
+	float heightScale = 8.0f;
+	float prevHeightScale = 8.0f; 
+
+	ID3D11RasterizerState* shadowRasterState = nullptr;
 };

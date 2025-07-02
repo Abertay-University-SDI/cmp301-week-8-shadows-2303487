@@ -1,3 +1,11 @@
+/**
+ * shadow_ps.hlsl
+ * --------------
+ * Pixel shader for shadow mapping with both directional and spot lights in a scene.
+ * Calculates shadow contributions from both lights using their respective shadow maps and combines them with texture and lighting.
+ * Handles light attenuation, shadow biasing, and combines multiple light sources for realistic shading.
+ */
+
 Texture2D shaderTexture : register(t0);
 Texture2D dirShadowMapTexture : register(t1);
 Texture2D spotShadowMapTexture : register(t2);
@@ -14,7 +22,7 @@ cbuffer LightBuffer : register(b1)
     float4 spotAmbient;
     float4 spotDiffuse;
     float3 spotDirection;
-    float  spotCutoff; // cos(cutoff angle)
+    float  spotCutoff;    // cos(cutoff angle)
     float3 spotPosition;
     float  spotExponent;
 };
@@ -59,10 +67,10 @@ float2 getProjectiveCoords(float4 lightViewPosition)
 
 float4 main(OutputType input) : SV_TARGET
 {
-    float shadowMapBias = 0.005f;
+    float shadowMapBias = 0.0005f;
     float4 textureColour = shaderTexture.Sample(diffuseSampler, input.tex);
 
-    // Directional Light
+    // Directional Light Shadow
     float2 dirTexCoord = getProjectiveCoords(input.dirLightViewPos);
     float dirShadow = 1.0f;
     if (hasDepthData(dirTexCoord))
@@ -70,19 +78,15 @@ float4 main(OutputType input) : SV_TARGET
 
     float4 dirLightCol = calculateLighting(-dirDirection, input.normal, dirDiffuse) * dirShadow;
 
-    // Spot Light
+    // Spot Light Shadow
     float2 spotTexCoord = getProjectiveCoords(input.spotLightViewPos);
     float spotShadow = 1.0f;
     if (hasDepthData(spotTexCoord))
         spotShadow = !isInShadow(spotShadowMapTexture, spotTexCoord, input.spotLightViewPos, shadowMapBias);
 
+    // Calculate spotlight factor (cone attenuation)
     float3 lightToPixel = normalize(input.worldPos.xyz - spotPosition);
-
-    // Fix 1: Use correct direction for spotlight (should be from spotPosition to worldPos, not the reverse)
     float spotFactor = dot(normalize(spotDirection), normalize(input.worldPos.xyz - spotPosition));
-    // Or, equivalently: float spotFactor = dot(spotDirection, -lightToPixel);
-
-    // Fix 2: Clamp spotFactor, and ensure cutoff is in cosine
     float spotLightVal = 0;
     if (spotFactor > spotCutoff)
         spotLightVal = pow(spotFactor, spotExponent);

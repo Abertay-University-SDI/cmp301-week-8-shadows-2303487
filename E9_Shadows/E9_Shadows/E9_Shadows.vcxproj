@@ -173,6 +173,7 @@
     <ClInclude Include="App1.h" />
     <ClInclude Include="DepthShader.h" />
     <ClInclude Include="ShadowShader.h" />
+    <ClInclude Include="stb_image.h" />
     <ClInclude Include="TextureShader.h" />
   </ItemGroup>
   <ItemGroup>

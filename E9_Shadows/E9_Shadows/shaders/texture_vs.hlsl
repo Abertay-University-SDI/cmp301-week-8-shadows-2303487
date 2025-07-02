@@ -1,5 +1,9 @@
-// texture vertex shader
-// Basic shader for rendering textured geometry
+/**
+ * texture_vs.hlsl
+ * ---------------
+ * Vertex shader for basic texture mapping.
+ * Transforms vertex positions and passes through UVs and normals for future use (e.g., lighting).
+ */
 
 cbuffer MatrixBuffer : register(b0)
 {
@@ -22,6 +26,7 @@ struct OutputType
 	float3 normal : NORMAL;
 };
 
+// Main vertex shader: Transforms vertex position and passes UV/normal to pixel shader.
 OutputType main(InputType input)
 {
 	OutputType output;
@@ -29,6 +34,6 @@ OutputType main(InputType input)
 	output.position = mul(output.position, viewMatrix);
 	output.position = mul(output.position, projectionMatrix);
 	output.tex = input.tex;
-	output.normal = input.normal; // Pass normal, in case you want to add lighting later
+	output.normal = input.normal; // Forward normal for future effects
 	return output;
 }

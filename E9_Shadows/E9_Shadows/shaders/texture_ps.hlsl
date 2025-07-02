@@ -1,9 +1,12 @@
-// Texture pixel/fragment shader
-// Basic fragment shader for rendering textured geometry
+/**
+ * texture_ps.hlsl
+ * ---------------
+ * Pixel (fragment) shader for basic texture mapping.
+ * Samples a texture using interpolated UV coordinates and outputs the resulting color.
+ */
 
-// Texture and sampler registers
-Texture2D texture0 : register(t0);
-SamplerState Sampler0 : register(s0);
+Texture2D texture0 : register(t0);      // Texture input.
+SamplerState Sampler0 : register(s0);   // Sampler state for texture sampling.
 
 struct InputType
 {
@@ -12,6 +15,7 @@ struct InputType
 	float3 normal : NORMAL;
 };
 
+// Main pixel shader: Samples the texture at the given UV and returns the color.
 float4 main(InputType input) : SV_TARGET
 {
 	return texture0.Sample(Sampler0, input.tex);

@@ -138,6 +138,9 @@
     <ClInclude Include="..\include\imGUI\stb_truetype.h">
       <Filter>GUI</Filter>
     </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BaseMesh.cpp">

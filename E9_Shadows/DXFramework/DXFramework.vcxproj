@@ -199,6 +199,7 @@
     <ClInclude Include="RenderTexture.h" />
     <ClInclude Include="ShadowMap.h" />
     <ClInclude Include="SphereMesh.h" />
+    <ClInclude Include="stb_image.h" />
     <ClInclude Include="System.h" />
     <ClInclude Include="TessellationMesh.h" />
     <ClInclude Include="TextureManager.h" />

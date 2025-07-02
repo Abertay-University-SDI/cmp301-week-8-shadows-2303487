@@ -1,3 +1,11 @@
+/**
+ * depth_vs.hlsl
+ * -------------
+ * Vertex shader for depth rendering.
+ * Transforms vertex positions through world, view, and projection matrices,
+ * passing projected position for use in depth calculation in the pixel shader.
+ */
+
 cbuffer MatrixBuffer : register(b0)
 {
     matrix worldMatrix;
@@ -14,8 +22,8 @@ struct InputType
 
 struct OutputType
 {
-    float4 position : SV_POSITION;
-    float4 depthPosition : TEXCOORD0;
+    float4 position : SV_POSITION;        // Projected position for rasterization.
+    float4 depthPosition : TEXCOORD0;     // Projected position for depth interpolation.
 };
 
 OutputType main(InputType input)
@@ -26,7 +34,7 @@ OutputType main(InputType input)
     float4 worldPos = mul(input.position, worldMatrix);
     float4 viewPos = mul(worldPos, viewMatrix);
     output.position = mul(viewPos, projectionMatrix);
-    output.depthPosition = output.position;
+    output.depthPosition = output.position; // Pass projected position for depth calculation
 
     return output;
 }
