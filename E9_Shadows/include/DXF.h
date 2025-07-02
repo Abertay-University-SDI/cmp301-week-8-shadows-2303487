@@ -11,7 +11,7 @@
 #pragma once
 // Include system level headers
 #include "System.h"
-//#include "D3D.h"
+#include "D3D.h"
 #include "BaseApplication.h"
 #include "BaseShader.h"
 //#include "TextureManager.h"

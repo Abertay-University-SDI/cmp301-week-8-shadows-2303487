@@ -76,6 +76,10 @@ public:
 	void setBackBufferRenderTarget();	///< Sets the back buffer as the render target
 	void resetViewport();				///< Restores viewport if dimensions of render target were different
 
+	ID3D11DepthStencilView* getDepthStencilViewPtr() { return depthStencilView; }
+	int getScreenWidth() const { return screenwidth; }
+	int getScreenHeight() const { return screenheight; }
+
 private:
 	void createDevice();
 	void createSwapchain();

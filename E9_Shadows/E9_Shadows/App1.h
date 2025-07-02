@@ -13,7 +13,10 @@
 #include "TextureShader.h"
 #include "ShadowShader.h"
 #include "DepthShader.h"
-//#include "PlaneMesh.h"
+#include "FullscreenQuadMesh.h"
+#include "PostProcessShader.h"
+#include "BaseApplication.h"
+#include "D3D.h"
 
 class App1 : public BaseApplication
 {
@@ -33,6 +36,8 @@ protected:
 
 	// Render scene from directional light's perspective for shadow mapping
 	void depthPass();
+
+	void createPostProcessRenderTarget(int width, int height);
 
 	// Render scene from spotlight's perspective for shadow mapping
 	void spotDepthPass();
@@ -78,4 +83,15 @@ private:
 	float prevHeightScale = 8.0f; 
 
 	ID3D11RasterizerState* shadowRasterState = nullptr;
+
+	// Post-processing resources
+	ID3D11Texture2D* postProcessTexture = nullptr;
+	ID3D11RenderTargetView* postProcessRTV = nullptr;
+	ID3D11ShaderResourceView* postProcessSRV = nullptr;
+	FullscreenQuadMesh* fullscreenQuad = nullptr;
+	PostProcessShader* postProcessShader = nullptr;
+
+	int postProcessWidth = 0;
+	int postProcessHeight = 0;
+
 };

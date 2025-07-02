@@ -80,6 +80,7 @@ protected:
 	ID3D11InputLayout* layout;
 	ID3D11Buffer* matrixBuffer;
 	ID3D11SamplerState* sampleState;
+	ID3D11Device* device;
 };
 
 #endif

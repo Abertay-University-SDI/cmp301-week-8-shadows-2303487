@@ -75,6 +75,8 @@ protected:
 	Timer* timer;			///< Pointer to timer object (for delta time and FPS)
 	TextureManager* textureMgr;	///< Pointer to texture manager (handles loading and storing of textures)
 	bool wireframeToggle;	///< Boolean tracking if wireframe is de/activated
+	int screenWidth;
+	int screenHeight;
 };
 
 #endif

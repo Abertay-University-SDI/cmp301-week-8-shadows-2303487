@@ -69,12 +69,16 @@ public:
 
 	void setAlphaBlending(bool b);	///< Sets the alpha blending state on/off for transparent rendering
 	bool getAlphaBlendingState();	///< Returns alphab blending state, if on/off
-	
+
 	void setWireframeMode(bool b);	///< Set wireframe render mode on/off
 	bool getWireframeState();		///< Returns currect wireframe state on/off
 
 	void setBackBufferRenderTarget();	///< Sets the back buffer as the render target
 	void resetViewport();				///< Restores viewport if dimensions of render target were different
+
+	ID3D11DepthStencilView* getDepthStencilViewPtr() { return depthStencilView; }
+	int getScreenWidth() const { return screenwidth; }
+	int getScreenHeight() const { return screenheight; }
 
 private:
 	void createDevice();
@@ -88,9 +92,9 @@ private:
 
 
 protected:
-	bool vsync_enabled;	
+	bool vsync_enabled;
 	bool isWirefameEnabled;
-	
+
 	bool zbufferState;		///< Variable tracks z-buffer state
 	bool wireframeState;	///< Variable tracks wireframe state
 	bool alphaBlendState;	///< Variable tracks alpha blending state
