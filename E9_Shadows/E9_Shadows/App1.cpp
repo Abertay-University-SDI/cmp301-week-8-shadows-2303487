@@ -111,7 +111,7 @@ void App1::init(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeigh
     BaseApplication::init(hinstance, hwnd, screenWidth, screenHeight, in, VSYNC, FULL_SCREEN);
 
     // Load meshes and models
-    mesh = new PlaneMesh(renderer->getDevice(), renderer->getDeviceContext(), "res/height.png", heightScale, 300);
+    mesh = new PlaneMesh(renderer->getDevice(), renderer->getDeviceContext(), "res/height.png", heightScale, terrainResolution);
     model = new AModel(renderer->getDevice(), "res/teapot.obj");
     textureMgr->loadTexture(L"brick", L"res/brick1.dds");
     cubeMesh = new CubeMesh(renderer->getDevice(), renderer->getDeviceContext());
@@ -145,23 +145,33 @@ void App1::init(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeigh
     createPostProcessRenderTarget(screenWidth, screenHeight);
     // postProcessWidth/postProcessHeight are set in createPostProcessRenderTarget
 
-    // Lights
+// Lights
     int sceneWidth = 100, sceneHeight = 100;
     light = new Light();
     light->setAmbientColour(0.3f, 0.3f, 0.3f, 1.0f);
     light->setDiffuseColour(1.0f, 1.0f, 1.0f, 1.0f);
-    light->setDirection(0.0f, -0.7f, 0.7f);
-    light->setPosition(0.f, 0.f, -10.f);
+    // Directional light: shines from above and at an angle toward the center of the scene
+    light->setDirection(-0.4f, -1.0f, 0.4f); // normalized direction (from above, angled)
+    light->setPosition(0.f, 30.f, -40.f);    // position above and behind the scene (for view matrix, not illumination)
     light->generateOrthoMatrix((float)sceneWidth, (float)sceneHeight, 0.1f, 100.f);
 
+    // Spot Light: above and to the side, pointing at scene's center
     spotLight = new Light();
     spotLight->setAmbientColour(0.2f, 0.2f, 0.2f, 1.0f);
     spotLight->setDiffuseColour(1.0f, 0.0f, 0.0f, 1.0f);
-    spotLight->setPosition(0.0f, 30.0f, 0.0f);
-    spotLight->setDirection(0.0f, -1.0f, 0.0f);
+    spotLight->setPosition(30.0f, 30.0f, 30.0f); // up and to the side
 
-    spotCutoffDegrees = 60.0f;
-    spotExponent = 8.0f;
+    // Calculate direction vector: target (scene center) - position, then normalize
+    XMFLOAT3 spotPos(30.0f, 30.0f, 30.0f);
+    XMFLOAT3 spotTarget(0.0f, 0.0f, 0.0f); // aim at scene center
+    XMFLOAT3 spotDir(
+        spotTarget.x - spotPos.x,
+        spotTarget.y - spotPos.y,
+        spotTarget.z - spotPos.z
+    );
+    float len = sqrtf(spotDir.x * spotDir.x + spotDir.y * spotDir.y + spotDir.z * spotDir.z);
+    spotDir.x /= len; spotDir.y /= len; spotDir.z /= len;
+    spotLight->setDirection(spotDir.x, spotDir.y, spotDir.z);
 
     // Spot light projection
     spotLightProjMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), 1.0f, 1.0f, 100.0f);
@@ -174,11 +184,13 @@ bool App1::frame()
     if (teapotAngle > XM_2PI) teapotAngle -= XM_2PI;
 
     // Heightmap live reload
-    if (heightScale != prevHeightScale) {
+    if (heightScale != prevHeightScale || terrainResolution != prevTerrainResolution) {
         delete mesh;
-        mesh = new PlaneMesh(renderer->getDevice(), renderer->getDeviceContext(), "res/height.png", heightScale, 300);
+        mesh = new PlaneMesh(renderer->getDevice(), renderer->getDeviceContext(), "res/height.png", heightScale, terrainResolution);
         prevHeightScale = heightScale;
+        prevTerrainResolution = terrainResolution;
     }
+
 
     if (!BaseApplication::frame()) return false;
     if (!render()) return false;
@@ -376,17 +388,42 @@ void App1::finalPass()
     shadowShader->render(renderer->getDeviceContext(), sphereMesh->getIndexCount());
 
     // 2. Render Sobel post-process to backbuffer
+ //   renderer->setBackBufferRenderTarget();
+ //   renderer->resetViewport();
+
+ //   XMFLOAT2 texelSize(1.0f / postProcessWidth, 1.0f / postProcessHeight);
+ //   postProcessShader->setShaderParameters(
+ //       renderer->getDeviceContext(),
+ //       postProcessSRV,
+ //       texelSize
+ //   );
+ //   fullscreenQuad->sendData(renderer->getDeviceContext());
+ //  // postProcessShader->render(renderer->getDeviceContext(), fullscreenQuad->getIndexCount());
+	//textureShader->setShaderParameters(renderer->getDeviceContext(), worldMatrix, viewMatrix, projectionMatrix, 	postProcessSRV);
+
     renderer->setBackBufferRenderTarget();
     renderer->resetViewport();
 
-    XMFLOAT2 texelSize(1.0f / postProcessWidth, 1.0f / postProcessHeight);
-    postProcessShader->setShaderParameters(
-        renderer->getDeviceContext(),
-        postProcessSRV,
-        texelSize
-    );
-    fullscreenQuad->sendData(renderer->getDeviceContext());
-    postProcessShader->render(renderer->getDeviceContext(), fullscreenQuad->getIndexCount());
+    if (sobelToggle)
+    {
+        // Run Sobel post-process
+        XMFLOAT2 texelSize(1.0f / postProcessWidth, 1.0f / postProcessHeight);
+        postProcessShader->setShaderParameters(
+            renderer->getDeviceContext(),
+            postProcessSRV,
+            texelSize
+        );
+        fullscreenQuad->sendData(renderer->getDeviceContext());
+        postProcessShader->render(renderer->getDeviceContext(), fullscreenQuad->getIndexCount());
+    }
+    else
+    {
+        // Just blit the post-process texture to the backbuffer with a basic texture shader (no Sobel)
+        XMMATRIX identity = XMMatrixIdentity();
+        textureShader->setShaderParameters(renderer->getDeviceContext(), identity, XMMatrixIdentity(), XMMatrixIdentity(), postProcessSRV);
+        fullscreenQuad->sendData(renderer->getDeviceContext());
+        textureShader->render(renderer->getDeviceContext(), fullscreenQuad->getIndexCount());
+    }
 
     // 3. Draw UI overlays
     gui();
@@ -404,7 +441,10 @@ void App1::gui()
 
     ImGui::Text("FPS: %.2f", timer->getFPS());
     ImGui::Checkbox("Wireframe mode", &wireframeToggle);
+    ImGui::Checkbox("Sobel mode", &sobelToggle);
     ImGui::SliderFloat("Plane Height Scale", &heightScale, 1.0f, 100.0f);
+    ImGui::SliderInt("Terrain Resolution", &terrainResolution, 100, 2048);
+
 
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

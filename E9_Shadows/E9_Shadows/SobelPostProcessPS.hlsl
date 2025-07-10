@@ -36,7 +36,7 @@ float4 main(PS_INPUT input) : SV_TARGET
     float gx = -tl - 2 * ml - bl + tr + 2 * mr + br;
     float gy = -tl - 2 * tc - tr + bl + 2 * bc + br;
     float edge = sqrt(gx * gx + gy * gy);
-    edge = edge * 0.5; // Try 0.1, 0.05, 0.01 -- lower if still too bright
+    edge = edge * 0.5; 
     edge = saturate(edge);
     return float4(edge, edge, edge, 1.0f);
 }

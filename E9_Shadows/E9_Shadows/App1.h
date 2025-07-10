@@ -78,6 +78,7 @@ private:
 
 	// Wireframe rendering toggle
 	bool wireframeToggle = false;
+	bool sobelToggle = true;
 
 	float heightScale = 8.0f;
 	float prevHeightScale = 8.0f; 
@@ -93,5 +94,7 @@ private:
 
 	int postProcessWidth = 0;
 	int postProcessHeight = 0;
+	int terrainResolution = 300;
+	int prevTerrainResolution = 300;
 
 };
