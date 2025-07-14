@@ -21,7 +21,6 @@ public:
     ShadowShader(ID3D11Device* device, HWND hwnd);
     ~ShadowShader();
 
-    // Sets shader parameters including transformation matrices, textures, shadow maps, and light info.
     void setShaderParameters(
         ID3D11DeviceContext* deviceContext,
         const XMMATRIX& world,
@@ -30,10 +29,14 @@ public:
         ID3D11ShaderResourceView* texture,
         ID3D11ShaderResourceView* dirDepthMap,
         ID3D11ShaderResourceView* spotDepthMap,
+        ID3D11ShaderResourceView* secondDirDepthMap,
         Light* dirLight,
         Light* spotLight,
+        Light* secondDirLight,
         float spotCutoffDegrees,
-        float spotExponent
+        float spotExponent,
+        bool shadowDebug,
+        float spotShadowBias
     );
 
 private:
@@ -48,6 +51,8 @@ private:
         XMMATRIX dirLightProj;
         XMMATRIX spotLightView;
         XMMATRIX spotLightProj;
+        XMMATRIX secondDirLightView;
+        XMMATRIX secondDirLightProj;
     };
 
     struct LightBufferType
@@ -62,10 +67,16 @@ private:
         float spotCutoff;
         XMFLOAT3 spotPosition;
         float spotExponent;
+        XMFLOAT4 secondDirAmbient;
+        XMFLOAT4 secondDirDiffuse;
+        XMFLOAT3 secondDirDirection;
+        float pad1;
+        int shadowDebug;
+        float pad2[3]; // alignment
     };
 
-    ID3D11Buffer* matrixBuffer = nullptr;         // Constant buffer for all transformation matrices
-    ID3D11SamplerState* sampleState = nullptr;    // Standard texture sampler
-    ID3D11SamplerState* sampleStateShadow = nullptr; // Shadow sampler for depth maps
-    ID3D11Buffer* lightBuffer = nullptr;          // Constant buffer for all light parameters
+    ID3D11Buffer* matrixBuffer = nullptr;
+    ID3D11SamplerState* sampleState = nullptr;
+    ID3D11SamplerState* sampleStateShadow = nullptr;
+    ID3D11Buffer* lightBuffer = nullptr;
 };

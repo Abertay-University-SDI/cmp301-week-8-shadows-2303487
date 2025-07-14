@@ -7,6 +7,15 @@
  * Inherits from BaseApplication for core application lifecycle management.
  */
 
+ /**
+  * App1.h
+  * ------
+  * Declares the App1 class, the main application entry point for rendering a scene with dual shadow lights.
+  * Sets up all geometry, shaders, lights, and shadow maps. Handles initialization, frame update, and rendering passes
+  * (depth, shadow, and final scene render), as well as basic GUI for real-time interaction and debugging.
+  * Inherits from BaseApplication for core application lifecycle management.
+  */
+
 #pragma once
 
 #include "DXF.h"
@@ -24,68 +33,53 @@ public:
 	App1();
 	~App1();
 
-	// Initialize application resources, scene, shaders, lights, and shadow maps
 	void init(HINSTANCE hinstance, HWND hwnd, int screenWidth, int screenHeight, Input* in, bool VSYNC, bool FULL_SCREEN);
-
-	// Main per-frame update
 	bool frame() override;
 
 protected:
-	// Main render routine, executes all rendering passes
 	bool render() override;
 
-	// Render scene from directional light's perspective for shadow mapping
+	bool shadowDebugMode = false;
 	void depthPass();
-
+	void secondDirectionalDepthPass();      // <-- ADDED
 	void createPostProcessRenderTarget(int width, int height);
-
-	// Render scene from spotlight's perspective for shadow mapping
+	void updateSpotLight();
 	void spotDepthPass();
-
-	// Render the final scene with full lighting and shadows
 	void finalPass();
-
-	// Draw the ImGui interface and debug overlays
 	void gui();
 
 private:
-	// Scene meshes and models
 	PlaneMesh* mesh = nullptr;
 	CubeMesh* cubeMesh = nullptr;
 	SphereMesh* sphereMesh = nullptr;
 	AModel* model = nullptr;
 
-	// Shaders
 	TextureShader* textureShader = nullptr;
 	ShadowShader* shadowShader = nullptr;
 	DepthShader* depthShader = nullptr;
 
-	// Lights
 	Light* light = nullptr;
 	Light* spotLight = nullptr;
+	Light* secondDirectionalLight = nullptr;    // <-- ADDED
 
-	// Shadow map render targets
 	ShadowMap* shadowMap = nullptr;
 	ShadowMap* spotShadowMap = nullptr;
+	ShadowMap* secondShadowMap = nullptr;       // <-- ADDED
 
-	// Spotlight parameters
 	float spotCutoffDegrees = 60.0f;
 	float spotExponent = 8.0f;
 	XMMATRIX spotLightProjMatrix;
 
-	// Animation state
 	float teapotAngle = 0.0f;
 
-	// Wireframe rendering toggle
 	bool wireframeToggle = false;
 	bool sobelToggle = true;
 
 	float heightScale = 8.0f;
-	float prevHeightScale = 8.0f; 
+	float prevHeightScale = 8.0f;
 
 	ID3D11RasterizerState* shadowRasterState = nullptr;
 
-	// Post-processing resources
 	ID3D11Texture2D* postProcessTexture = nullptr;
 	ID3D11RenderTargetView* postProcessRTV = nullptr;
 	ID3D11ShaderResourceView* postProcessSRV = nullptr;
@@ -97,4 +91,12 @@ private:
 	int terrainResolution = 300;
 	int prevTerrainResolution = 300;
 
+	float spotLightX = 50.0f;
+	float spotLightY = 30.0f;
+	float spotLightZ = 10.0f;
+	float spotFov = 70.0f;
+	float spotNear = 1.0f;
+	float spotFar = 100.0f;
+
+	float spotShadowBias = 0.0005f;
 };

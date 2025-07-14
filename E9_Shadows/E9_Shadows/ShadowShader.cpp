@@ -81,10 +81,14 @@ void ShadowShader::setShaderParameters(
     ID3D11ShaderResourceView* texture,
     ID3D11ShaderResourceView* dirDepthMap,
     ID3D11ShaderResourceView* spotDepthMap,
+    ID3D11ShaderResourceView* secondDirDepthMap,
     Light* dirLight,
     Light* spotLight,
+    Light* secondDirLight,
     float spotCutoffDegrees,
-    float spotExponent)
+    float spotExponent,
+    bool shadowDebug,
+    float spotShadowBias)
 {
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     MatrixBufferType* dataPtr = nullptr;
@@ -98,6 +102,8 @@ void ShadowShader::setShaderParameters(
     XMMATRIX tDirLightProj = XMMatrixTranspose(dirLight->getOrthoMatrix());
     XMMATRIX tSpotLightView = XMMatrixTranspose(spotLight->getViewMatrix());
     XMMATRIX tSpotLightProj = XMMatrixTranspose(spotLight->getProjectionMatrix());
+    XMMATRIX tSecondDirLightView = XMMatrixTranspose(secondDirLight->getViewMatrix());
+    XMMATRIX tSecondDirLightProj = XMMatrixTranspose(secondDirLight->getOrthoMatrix());
 
     // --- Matrix buffer (b0) ---
     deviceContext->Map(matrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
@@ -109,6 +115,8 @@ void ShadowShader::setShaderParameters(
     dataPtr->dirLightProj = tDirLightProj;
     dataPtr->spotLightView = tSpotLightView;
     dataPtr->spotLightProj = tSpotLightProj;
+    dataPtr->secondDirLightView = tSecondDirLightView;
+    dataPtr->secondDirLightProj = tSecondDirLightProj;
     deviceContext->Unmap(matrixBuffer, 0);
     deviceContext->VSSetConstantBuffers(0, 1, &matrixBuffer);
 
@@ -119,6 +127,10 @@ void ShadowShader::setShaderParameters(
     lightPtr->dirAmbient = dirLight->getAmbientColour();
     lightPtr->dirDiffuse = dirLight->getDiffuseColour();
     lightPtr->dirDirection = dirLight->getDirection();
+    // Second Directional Light
+    lightPtr->secondDirAmbient = secondDirLight->getAmbientColour();
+    lightPtr->secondDirDiffuse = secondDirLight->getDiffuseColour();
+    lightPtr->secondDirDirection = secondDirLight->getDirection();
     // Spot Light
     lightPtr->spotAmbient = spotLight->getAmbientColour();
     lightPtr->spotDiffuse = spotLight->getDiffuseColour();
@@ -126,6 +138,7 @@ void ShadowShader::setShaderParameters(
     lightPtr->spotCutoff = spotCutoffDegrees;
     lightPtr->spotPosition = spotLight->getPosition();
     lightPtr->spotExponent = spotExponent;
+    lightPtr->shadowDebug = shadowDebug ? 1 : 0;
     deviceContext->Unmap(lightBuffer, 0);
     deviceContext->PSSetConstantBuffers(1, 1, &lightBuffer);
 
@@ -133,6 +146,7 @@ void ShadowShader::setShaderParameters(
     deviceContext->PSSetShaderResources(0, 1, &texture);
     deviceContext->PSSetShaderResources(1, 1, &dirDepthMap);
     deviceContext->PSSetShaderResources(2, 1, &spotDepthMap);
+    deviceContext->PSSetShaderResources(3, 1, &secondDirDepthMap);
     deviceContext->PSSetSamplers(0, 1, &sampleState);
     deviceContext->PSSetSamplers(1, 1, &sampleStateShadow);
 }
